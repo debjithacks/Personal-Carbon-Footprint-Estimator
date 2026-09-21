@@ -34,11 +34,26 @@ CAR_CATEGORY_OPTIONS = {
     "Sedan": "sedan",
     "SUV": "suv",
     "Hybrid": "hybrid",
+    "Electric car": "electric",
 }
 
-CAR_FUEL_OPTIONS = {
-    "Petrol": "petrol",
-    "Diesel": "diesel",
+CAR_FUEL_OPTIONS_BY_CATEGORY = {
+    "small": {
+        "Petrol": "petrol",
+        "CNG": "cng",
+    },
+    "hatchback": {
+        "Petrol": "petrol",
+        "Diesel": "diesel",
+    },
+    "sedan": {
+        "Petrol": "petrol",
+        "Diesel": "diesel",
+    },
+    "suv": {
+        "Petrol": "petrol",
+        "Diesel": "diesel",
+    },
 }
 
 
@@ -86,10 +101,27 @@ CLASSIFICATION_LABELS = (
 FOOTPRINT_DISCLOSURE = (
     "Indicative estimate based on published emission factors, documented "
     "proxies, and stated assumptions. It is not a complete life-cycle "
-    "assessment."
+    "assessment. Household electricity and waste are allocated equally across "
+    "household members. EV transport uses a BEE-reported vehicle energy proxy "
+    "multiplied by the CEA grid factor; charging losses are not separately modeled."
 )
 
 CLASSIFICATION_DISCLOSURE = (
     "Low / Medium / High is a project-defined classification and is not "
     "presented as a universal scientific threshold."
 )
+
+
+# ---------------------------------------------------------------------------
+# IBM Granite
+# ---------------------------------------------------------------------------
+
+GRANITE_DEFAULT_MODEL_ID = "ibm/granite-3-2-8b-instruct"
+
+GRANITE_DEFAULT_URL = (
+    "https://us-south.ml.cloud.ibm.com"
+)
+
+GRANITE_DEFAULT_MAX_NEW_TOKENS = 220
+
+GRANITE_DEFAULT_TEMPERATURE = 0.2

@@ -1,14 +1,20 @@
 {
-  "methodology_version": "1.0",
-  "last_reviewed": "2026-09-13",
-  "notes": "This file is the single source of truth for all emission factors used by carbon_calculator.py. The calculation engine must never hardcode a numeric factor outside this file. Every factor below is either (a) an India-specific sourced value, (b) a disclosed international proxy, or (c) an explicitly labeled assumption. Category 'shopping' is intentionally excluded from numeric calculation -- see qualitative_only flag.",
-
+  "methodology_version": "1.1",
+  "last_reviewed": "2026-09-21",
+  "notes": "This file is the single source of truth for all emission factors used by carbon_calculator.py. The calculation engine must never hardcode a numeric factor outside this file. Every factor below is either (a) an India-specific sourced value, (b) a disclosed international proxy, or (c) an explicitly labeled assumption. Category shopping is intentionally excluded from numeric calculation -- see qualitative_only flag. Electric-vehicle transport uses a BEE-reported private EV energy-consumption proxy multiplied by the CEA grid factor. Household electricity and waste are allocated equally across household members by the calculator.",
   "transport": {
     "unit": "kg_CO2e_per_km",
     "modes": {
-      "walking":  { "value": 0.0,  "confidence": "high", "notes": "No direct combustion emissions; consistent with standard calculator convention." },
-      "cycling":  { "value": 0.0,  "confidence": "high", "notes": "Same convention as walking." },
-
+      "walking": {
+        "value": 0.0,
+        "confidence": "high",
+        "notes": "No direct combustion emissions; consistent with standard calculator convention."
+      },
+      "cycling": {
+        "value": 0.0,
+        "confidence": "high",
+        "notes": "Same convention as walking."
+      },
       "bus": {
         "value": 0.015161,
         "unit": "kg_CO2e_per_passenger_km",
@@ -21,7 +27,6 @@
         "assumptions": "Assumes standard intracity occupancy patterns from CIRT/SRTU data.",
         "limitations": "NOT valid for Bus Rapid Transit (BRTS) or intercity buses -- loading and passenger-km differ significantly for those services."
       },
-
       "two_wheeler_standard": {
         "value": 0.0387,
         "source": "India GHG Program - India Specific Road Transport Emission Factors",
@@ -44,15 +49,62 @@
         "confidence": "high",
         "limitations": "Same simplification note as two_wheeler_standard."
       },
-
-      "car_small_petrol":     { "value": 0.111, "represents": "Small hatchback <800cc, e.g. Alto 800" },
-      "car_hatchback_petrol": { "value": 0.140, "represents": "Hatchback <1400cc, e.g. Swift, i10" },
-      "car_hatchback_diesel": { "value": 0.126, "represents": "Hatchback <1400cc diesel" },
-      "car_sedan_petrol":     { "value": 0.153, "represents": "Sedan <1600cc, e.g. City, Verna" },
-      "car_sedan_diesel":     { "value": 0.141, "represents": "Sedan <1600cc diesel" },
-      "car_suv_petrol":       { "value": 0.213, "represents": "SUV <3000cc, e.g. XUV500, Fortuner" },
-      "car_suv_diesel":       { "value": 0.220, "represents": "SUV <3000cc diesel" },
-      "car_hybrid":           { "value": 0.103, "represents": "Hybrid <2000cc, e.g. Prius" }
+      "car_small_petrol": {
+        "value": 0.111,
+        "represents": "Small hatchback <800cc, e.g. Alto 800"
+      },
+      "car_hatchback_petrol": {
+        "value": 0.14,
+        "represents": "Hatchback <1400cc, e.g. Swift, i10"
+      },
+      "car_hatchback_diesel": {
+        "value": 0.126,
+        "represents": "Hatchback <1400cc diesel"
+      },
+      "car_sedan_petrol": {
+        "value": 0.153,
+        "represents": "Sedan <1600cc, e.g. City, Verna"
+      },
+      "car_sedan_diesel": {
+        "value": 0.141,
+        "represents": "Sedan <1600cc diesel"
+      },
+      "car_suv_petrol": {
+        "value": 0.213,
+        "represents": "SUV <3000cc, e.g. XUV500, Fortuner"
+      },
+      "car_suv_diesel": {
+        "value": 0.22,
+        "represents": "SUV <3000cc diesel"
+      },
+      "car_hybrid": {
+        "value": 0.103,
+        "represents": "Hybrid <2000cc, e.g. Prius"
+      },
+      "car_small_cng": {
+        "value": 0.068,
+        "unit": "kg_CO2e_per_km",
+        "source": "India GHG Program (WRI India / TERI / CII) - India Specific Road Transport Emission Factors",
+        "source_url": "https://shaktifoundation.in/wp-content/uploads/2022/04/WRI-2015-India-Specific-Road-Transport-Emission-Factors.pdf",
+        "source_year": 2015,
+        "geographic_scope": "India",
+        "represents": "Small car <800cc, CNG, with the source uplift factor",
+        "confidence": "high",
+        "limitations": "Representative source category; actual CNG vehicle emissions vary by vehicle, condition, driving pattern, and fuel composition."
+      },
+      "car_electric": {
+        "value": 0.106,
+        "unit": "kWh_per_km",
+        "source": "Bureau of Energy Efficiency (BEE), India EV Digest",
+        "source_url": "https://beeindia.gov.in/sites/default/files/publications/files/EV%20Digest%20final.pdf",
+        "source_year": 2025,
+        "geographic_scope": "India",
+        "represents": "Representative private electric four-wheeler model (Tata Nexon EV XZ+): 10.6 kWh/100 km",
+        "calculation_method": "0.106 kWh/km × CEA Indian grid-average emission factor",
+        "confidence": "medium",
+        "assumptions": "Uses one BEE-reported private EV model as a proxy because EV energy consumption varies by model and driving conditions.",
+        "limitations": "Not a universal EV efficiency factor. Charging losses, battery degradation, temperature, auxiliary loads, speed, terrain, and exact vehicle model are not separately modeled."
+      }
     },
     "car_shared_metadata": {
       "source": "India GHG Program (WRI India / TERI / CII) - India Specific Road Transport Emission Factors",
@@ -65,10 +117,9 @@
       "limitations": "Real emissions vary further by exact engine size and vehicle age/condition within each bucket; this is a defensible simplification, not full precision."
     }
   },
-
   "electricity": {
     "grid_average": {
-      "value": 0.710,
+      "value": 0.71,
       "unit": "kg_CO2e_per_kWh",
       "source": "Central Electricity Authority (CEA), Government of India - CO2 Baseline Database for the Indian Power Sector, Version 21.0",
       "source_url": "https://cea.nic.in/baseline_db/version-21-0/?lang=en",
@@ -81,7 +132,6 @@
       "limitations": "Marked provisional by CEA. Declines annually as renewable share grows (0.727 in FY23-24, 0.716 in FY22-23) -- should be reviewed/updated yearly."
     }
   },
-
   "diet": {
     "unit": "kg_CO2e_per_day",
     "source": "Scarborough, P. et al. (2014), 'Dietary greenhouse gas emissions of meat-eaters, fish-eaters, vegetarians and vegans in the UK', Climatic Change",
@@ -91,15 +141,30 @@
     "assumptions": "User's self-selected diet category is mapped directly to the closest matching UK cohort category.",
     "limitations": "Indian dietary patterns (dairy-heavy vegetarian diets, different staples, different food-mile patterns) differ materially from the UK cohort this data was drawn from. This MUST be disclosed to the end user as a proxy, not an Indian-specific figure.",
     "categories": {
-      "high_meat":    { "value": 7.19, "represents": ">=100g meat/day" },
-      "medium_meat":  { "value": 5.63, "represents": "50-99g meat/day" },
-      "low_meat":     { "value": 4.67, "represents": "<50g meat/day" },
-      "pescatarian":  { "value": 3.91, "represents": "Fish, no meat" },
-      "vegetarian":   { "value": 3.81 },
-      "vegan":        { "value": 2.89 }
+      "high_meat": {
+        "value": 7.19,
+        "represents": ">=100g meat/day"
+      },
+      "medium_meat": {
+        "value": 5.63,
+        "represents": "50-99g meat/day"
+      },
+      "low_meat": {
+        "value": 4.67,
+        "represents": "<50g meat/day"
+      },
+      "pescatarian": {
+        "value": 3.91,
+        "represents": "Fish, no meat"
+      },
+      "vegetarian": {
+        "value": 3.81
+      },
+      "vegan": {
+        "value": 2.89
+      }
     }
   },
-
   "waste": {
     "base_factor": {
       "value": 1.0,
@@ -113,7 +178,7 @@
       "limitations": "City-specific figure; India's MSW collection/treatment rate varies significantly by city and state (national collection rate ~70-75% per CPCB-adjacent sources)."
     },
     "recycling_reduction": {
-      "value": 0.50,
+      "value": 0.5,
       "type": "assumption",
       "NOT_a_sourced_emission_factor": true,
       "rationale": "Reasonable simplification representing that consistent recycling diverts a meaningful share of waste from landfill/high-emission disposal.",
@@ -121,7 +186,6 @@
       "limitations": "No authoritative India-specific household-level recycling-avoided-emissions figure was found. Must be labeled as an assumption in both code comments and any user-facing methodology page."
     }
   },
-
   "shopping": {
     "qualitative_only": true,
     "contributes_to_numeric_total": false,
@@ -131,9 +195,12 @@
       "source": "GoClimate, 'The carbon footprint of shopping' (2020) -- non-peer-reviewed, illustrative only",
       "examples": "t-shirt ~2 kg CO2e, jeans ~15-20 kg CO2e (embedded manufacturing footprint, global average)"
     },
-    "tiers": ["rarely_buys_new_items", "buys_occasionally", "buys_frequently"]
+    "tiers": [
+      "rarely_buys_new_items",
+      "buys_occasionally",
+      "buys_frequently"
+    ]
   },
-
   "display": {
     "result_label": "Estimated annual lifestyle CO2e",
     "disclosure_note": "Indicative estimate based on published emission factors, documented proxies, and stated assumptions. It is not a complete life-cycle assessment."

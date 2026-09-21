@@ -34,9 +34,15 @@ SUPPORTED_TRANSPORT_MODES = frozenset(
 )
 SUPPORTED_TWO_WHEELER_TYPES = frozenset({"standard", "premium"})
 SUPPORTED_CAR_CATEGORIES = frozenset(
-    {"small", "hatchback", "sedan", "suv", "hybrid"}
+    {"small", "hatchback", "sedan", "suv", "hybrid", "electric"}
 )
-SUPPORTED_CAR_FUELS = frozenset({"petrol", "diesel"})
+SUPPORTED_CAR_FUELS = frozenset({"petrol", "diesel", "cng"})
+SUPPORTED_FUEL_OPTIONS_BY_CAR_CATEGORY = {
+    "small": frozenset({"petrol", "cng"}),
+    "hatchback": frozenset({"petrol", "diesel"}),
+    "sedan": frozenset({"petrol", "diesel"}),
+    "suv": frozenset({"petrol", "diesel"}),
+}
 SUPPORTED_RECYCLING_HABITS = frozenset(
     {"rarely", "sometimes", "consistently"}
 )
@@ -52,6 +58,8 @@ class CarbonInput:
 
     shopping_habit is retained as contextual input for the AI recommendation
     layer but intentionally does not contribute to the numeric CO2e total.
+    Household electricity and waste are allocated equally across household
+    members using household_size.
     """
 
     transport_mode: str
@@ -62,6 +70,7 @@ class CarbonInput:
     two_wheeler_type: str | None = None
 
     electricity_kwh_per_month: float = 0.0
+    household_size: int = 1
     diet_category: str = "vegetarian"
     waste_kg_per_day: float = 0.0
     recycling_habit: str = "rarely"
@@ -235,17 +244,54 @@ def calculate_transport(
                 "Invalid car_category."
             )
 
-        if car_category == "hybrid":
+        if car_category in {"hybrid", "electric"}:
+            if user_input.car_fuel is not None:
+                raise CarbonCalculationError(
+                    f"{car_category} cars do not accept a separate fuel selection."
+                )
+
+            factor_key = f"car_{car_category}"
+
+            if car_category == "electric":
+                energy_kwh_per_km = _get_factor(
+                    factors,
+                    "transport",
+                    "modes",
+                    factor_key,
+                )
+                grid_factor = _get_factor(
+                    factors,
+                    "electricity",
+                    "grid_average",
+                )
+                return (
+                    float(user_input.distance_km_per_day)
+                    * energy_kwh_per_km
+                    * grid_factor
+                    * DAYS_PER_YEAR
+                )
+
             factor = _get_factor(
                 factors,
                 "transport",
                 "modes",
-                "car_hybrid",
+                factor_key,
             )
         else:
+            allowed_fuels = SUPPORTED_FUEL_OPTIONS_BY_CAR_CATEGORY.get(
+                car_category,
+                frozenset(),
+            )
+
             if user_input.car_fuel not in SUPPORTED_CAR_FUELS:
                 raise CarbonCalculationError(
-                    "car_fuel must be 'petrol' or 'diesel'."
+                    "car_fuel must be 'petrol', 'diesel', or 'cng'."
+                )
+
+            if user_input.car_fuel not in allowed_fuels:
+                raise CarbonCalculationError(
+                    f"Fuel '{user_input.car_fuel}' is not supported for "
+                    f"car category '{car_category}'."
                 )
 
             factor_key = f"car_{car_category}_{user_input.car_fuel}"
@@ -259,18 +305,39 @@ def calculate_transport(
     return float(user_input.distance_km_per_day) * factor * DAYS_PER_YEAR
 
 
+def _require_positive_household_size(value: int) -> int:
+    """Validate and return a positive household member count."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise CarbonCalculationError(
+            "household_size must be a positive integer."
+        )
+
+    if value <= 0:
+        raise CarbonCalculationError(
+            "household_size must be greater than zero."
+        )
+
+    return value
+
+
 def calculate_electricity(
     user_input: CarbonInput,
     factors: dict[str, Any],
 ) -> float:
-    """Calculate annual electricity-related CO2e in kilograms.
+    """Calculate this person's annual share of household electricity CO2e.
 
     Formula:
-        monthly kWh × 12 × kg CO2e/kWh
+        (household monthly kWh ÷ household size) × 12 × kg CO2e/kWh
+
+    The estimator uses an equal-share allocation because no individual-level
+    electricity metering is requested.
     """
     _require_finite_non_negative(
         user_input.electricity_kwh_per_month,
         "electricity_kwh_per_month",
+    )
+    household_size = _require_positive_household_size(
+        user_input.household_size
     )
 
     factor = _get_factor(
@@ -279,11 +346,11 @@ def calculate_electricity(
         "grid_average",
     )
 
-    return (
-        float(user_input.electricity_kwh_per_month)
-        * MONTHS_PER_YEAR
-        * factor
+    personal_monthly_kwh = (
+        float(user_input.electricity_kwh_per_month) / household_size
     )
+
+    return personal_monthly_kwh * MONTHS_PER_YEAR * factor
 
 
 def calculate_diet(
@@ -338,14 +405,22 @@ def calculate_waste(
             "or 'consistently'."
         )
 
+    household_size = _require_positive_household_size(
+        user_input.household_size
+    )
+
     base_factor = _get_factor(
         factors,
         "waste",
         "base_factor",
     )
 
+    personal_waste_kg_per_day = (
+        float(user_input.waste_kg_per_day) / household_size
+    )
+
     annual_waste_emissions = (
-        float(user_input.waste_kg_per_day)
+        personal_waste_kg_per_day
         * base_factor
         * DAYS_PER_YEAR
     )
@@ -389,6 +464,8 @@ def calculate_carbon_footprint(
 
     Shopping is intentionally excluded from the numerical calculation and
     remains available as context for the Granite recommendation layer.
+    Household electricity and waste are converted to a per-person share using
+    an equal-share household allocation.
     """
     if factors is None:
         factors = load_emission_factors()

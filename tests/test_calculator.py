@@ -84,6 +84,7 @@ def test_two_wheeler_modes(factors, two_wheeler_type, expected_factor):
     ("category", "fuel", "expected_factor"),
     [
         ("small", "petrol", 0.111),
+        ("small", "cng", 0.068),
         ("hatchback", "petrol", 0.140),
         ("hatchback", "diesel", 0.126),
         ("sedan", "petrol", 0.153),
@@ -105,6 +106,24 @@ def test_car_modes(factors, category, fuel, expected_factor):
 
     assert result.transport.kg_co2e == pytest.approx(
         10 * expected_factor * 365,
+        abs=0.01,
+    )
+
+
+def test_electric_car_mode_uses_battery_energy_proxy_and_grid_factor(factors):
+    result = calculate_carbon_footprint(
+        make_user(
+            transport_mode="car",
+            distance_km_per_day=10,
+            car_category="electric",
+            car_fuel=None,
+        ),
+        factors,
+    )
+
+    expected = 10 * 0.106 * 0.710 * 365
+    assert result.transport.kg_co2e == pytest.approx(
+        expected,
         abs=0.01,
     )
 
@@ -133,6 +152,21 @@ def test_hybrid_car_mode(factors):
 def test_electricity_calculation(factors):
     result = calculate_carbon_footprint(
         make_user(electricity_kwh_per_month=100),
+        factors,
+    )
+
+    assert result.electricity.kg_co2e == pytest.approx(
+        100 * 12 * 0.710,
+        abs=0.01,
+    )
+
+
+def test_household_electricity_is_allocated_equally(factors):
+    result = calculate_carbon_footprint(
+        make_user(
+            electricity_kwh_per_month=400,
+            household_size=4,
+        ),
         factors,
     )
 
@@ -220,6 +254,18 @@ def test_consistent_recycling_applies_documented_50_percent_assumption(
     )
 
 
+def test_household_waste_is_allocated_equally(factors):
+    result = calculate_carbon_footprint(
+        make_user(
+            waste_kg_per_day=4,
+            household_size=4,
+        ),
+        factors,
+    )
+
+    assert result.waste.kg_co2e == pytest.approx(365, abs=0.01)
+
+
 def test_zero_waste_produces_zero_waste_emissions(factors):
     result = calculate_carbon_footprint(
         make_user(waste_kg_per_day=0),
@@ -265,6 +311,8 @@ def test_shopping_does_not_affect_numeric_total(factors):
         ("distance_km_per_day", -1),
         ("electricity_kwh_per_month", -1),
         ("waste_kg_per_day", -1),
+        ("household_size", 0),
+        ("household_size", -1),
     ],
 )
 def test_negative_numeric_inputs_are_rejected(factors, field, value):
@@ -365,6 +413,20 @@ def test_non_hybrid_car_requires_valid_fuel(factors):
         )
 
 
+def test_electric_car_does_not_require_petrol_diesel_or_cng_fuel(factors):
+    result = calculate_carbon_footprint(
+        make_user(
+            transport_mode="car",
+            distance_km_per_day=10,
+            car_category="electric",
+            car_fuel=None,
+        ),
+        factors,
+    )
+
+    assert result.transport.kg_co2e > 0
+
+
 def test_hybrid_does_not_require_petrol_or_diesel_fuel(factors):
     result = calculate_carbon_footprint(
         make_user(
@@ -380,6 +442,40 @@ def test_hybrid_does_not_require_petrol_or_diesel_fuel(factors):
         10 * 0.103 * 365,
         abs=0.01,
     )
+
+
+def test_small_car_does_not_accept_diesel(factors):
+    with pytest.raises(CarbonCalculationError, match="not supported"):
+        calculate_carbon_footprint(
+            make_user(
+                transport_mode="car",
+                car_category="small",
+                car_fuel="diesel",
+            ),
+            factors,
+        )
+
+
+def test_hybrid_or_electric_does_not_accept_separate_fuel(factors):
+    with pytest.raises(CarbonCalculationError):
+        calculate_carbon_footprint(
+            make_user(
+                transport_mode="car",
+                car_category="electric",
+                car_fuel="petrol",
+            ),
+            factors,
+        )
+
+    with pytest.raises(CarbonCalculationError):
+        calculate_carbon_footprint(
+            make_user(
+                transport_mode="car",
+                car_category="hybrid",
+                car_fuel="petrol",
+            ),
+            factors,
+        )
 
 
 def test_invalid_car_fuel_is_rejected(factors):
@@ -525,3 +621,11 @@ def test_non_object_factor_json_is_rejected(tmp_path):
 
     with pytest.raises(CarbonCalculationError, match="JSON object"):
         load_emission_factors(invalid_file)
+
+
+def test_non_integer_household_size_is_rejected(factors):
+    with pytest.raises(CarbonCalculationError):
+        calculate_carbon_footprint(
+            make_user(household_size=2.5),
+            factors,
+        )

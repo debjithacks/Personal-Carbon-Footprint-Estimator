@@ -283,6 +283,29 @@ class GraniteLocalService:
             diet_category
         )
 
+        car_category = habit_context.get("car_category", "")
+
+        if car_category == "electric":
+            transport_instruction = (
+                "The user's selected car is electric. Do not describe it as a "
+                "petrol or diesel vehicle and do not recommend switching from "
+                "petrol/diesel to an EV. Transport advice may focus on reducing "
+                "travel distance, shared/public transport, efficient charging, "
+                "or trip consolidation. Do not make unsupported claims that EV "
+                "driving has zero emissions."
+            )
+        elif car_category == "hybrid":
+            transport_instruction = (
+                "The user's selected car is hybrid. Do not describe it as a "
+                "fully petrol-only or fully electric vehicle. Do not invent fuel "
+                "efficiency values."
+            )
+        else:
+            transport_instruction = (
+                "Respect the selected transport mode and vehicle information. "
+                "Do not invent vehicle-specific fuel consumption or emission factors."
+            )
+
         # -------------------------------------------------------------------
         # Prompt
         # -------------------------------------------------------------------
@@ -320,6 +343,10 @@ User lifestyle:
 Diet-specific constraint:
 
 {diet_instruction}
+
+Transport-specific constraint:
+
+{transport_instruction}
 
 Your task is only to create useful, personalized sustainability advice.
 
