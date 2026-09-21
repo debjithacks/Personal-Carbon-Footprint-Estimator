@@ -1,0 +1,3 @@
+streamlit==1.63.0
+plotly>=6.3,<7
+ollama>=0.6,<1
