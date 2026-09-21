@@ -257,4 +257,6 @@ application workflow rather than being sent to a cloud AI API.
 
 ## License
 
-Add the license selected for the project before publication.
+This project is licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for the full license text.
