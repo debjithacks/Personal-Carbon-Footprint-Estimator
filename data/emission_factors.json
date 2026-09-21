@@ -1,0 +1,141 @@
+{
+  "methodology_version": "1.0",
+  "last_reviewed": "2026-09-13",
+  "notes": "This file is the single source of truth for all emission factors used by carbon_calculator.py. The calculation engine must never hardcode a numeric factor outside this file. Every factor below is either (a) an India-specific sourced value, (b) a disclosed international proxy, or (c) an explicitly labeled assumption. Category 'shopping' is intentionally excluded from numeric calculation -- see qualitative_only flag.",
+
+  "transport": {
+    "unit": "kg_CO2e_per_km",
+    "modes": {
+      "walking":  { "value": 0.0,  "confidence": "high", "notes": "No direct combustion emissions; consistent with standard calculator convention." },
+      "cycling":  { "value": 0.0,  "confidence": "high", "notes": "Same convention as walking." },
+
+      "bus": {
+        "value": 0.015161,
+        "unit": "kg_CO2e_per_passenger_km",
+        "source": "India GHG Program (WRI India / TERI / CII) - India Specific Road Transport Emission Factors",
+        "source_url": "https://shaktifoundation.in/wp-content/uploads/2022/04/WRI-2015-India-Specific-Road-Transport-Emission-Factors.pdf",
+        "source_year": 2015,
+        "geographic_scope": "India (intracity buses, State Transport Utility fleet average)",
+        "calculation_method": "Weighted average across State Road Transport Utilities: diesel consumption (from revenue-km / fuel efficiency) x fuel emission factor, divided by total passenger-km",
+        "confidence": "high",
+        "assumptions": "Assumes standard intracity occupancy patterns from CIRT/SRTU data.",
+        "limitations": "NOT valid for Bus Rapid Transit (BRTS) or intercity buses -- loading and passenger-km differ significantly for those services."
+      },
+
+      "two_wheeler_standard": {
+        "value": 0.0387,
+        "source": "India GHG Program - India Specific Road Transport Emission Factors",
+        "source_url": "https://shaktifoundation.in/wp-content/uploads/2022/04/WRI-2015-India-Specific-Road-Transport-Emission-Factors.pdf",
+        "source_year": 2015,
+        "geographic_scope": "India",
+        "represents": "Scooter <150cc (e.g. Activa-class) -- includes study's 10% uplift factor",
+        "calculation_method": "Fuel emission factor (2.27193 kg CO2/litre petrol) / average fleet fuel efficiency, +10% uplift for real-world conditions",
+        "confidence": "high",
+        "assumptions": "Used as representative of the most common two-wheeler segment in India.",
+        "limitations": "Actual value ranges 0.0319-0.0597 kg/km across the full engine-capacity range the source studied (100cc-500cc); this is a simplification for a short user questionnaire, not the full granularity available."
+      },
+      "two_wheeler_premium": {
+        "value": 0.0458,
+        "source": "India GHG Program - India Specific Road Transport Emission Factors",
+        "source_url": "https://shaktifoundation.in/wp-content/uploads/2022/04/WRI-2015-India-Specific-Road-Transport-Emission-Factors.pdf",
+        "source_year": 2015,
+        "geographic_scope": "India",
+        "represents": "Motorcycle <200cc -- includes study's 10% uplift factor",
+        "confidence": "high",
+        "limitations": "Same simplification note as two_wheeler_standard."
+      },
+
+      "car_small_petrol":     { "value": 0.111, "represents": "Small hatchback <800cc, e.g. Alto 800" },
+      "car_hatchback_petrol": { "value": 0.140, "represents": "Hatchback <1400cc, e.g. Swift, i10" },
+      "car_hatchback_diesel": { "value": 0.126, "represents": "Hatchback <1400cc diesel" },
+      "car_sedan_petrol":     { "value": 0.153, "represents": "Sedan <1600cc, e.g. City, Verna" },
+      "car_sedan_diesel":     { "value": 0.141, "represents": "Sedan <1600cc diesel" },
+      "car_suv_petrol":       { "value": 0.213, "represents": "SUV <3000cc, e.g. XUV500, Fortuner" },
+      "car_suv_diesel":       { "value": 0.220, "represents": "SUV <3000cc diesel" },
+      "car_hybrid":           { "value": 0.103, "represents": "Hybrid <2000cc, e.g. Prius" }
+    },
+    "car_shared_metadata": {
+      "source": "India GHG Program (WRI India / TERI / CII) - India Specific Road Transport Emission Factors",
+      "source_url": "https://shaktifoundation.in/wp-content/uploads/2022/04/WRI-2015-India-Specific-Road-Transport-Emission-Factors.pdf",
+      "source_year": 2015,
+      "geographic_scope": "India",
+      "calculation_method": "Fuel emission factor (petrol 2.27193 kg CO2/L, diesel 2.6444 kg CO2/L) divided by SIAM-segment average fuel efficiency, +8% uplift factor (per CRRI real-world driving study) applied by the source",
+      "confidence": "high -- verified directly against primary source PDF, section 5.3.1",
+      "assumptions": "Each simplified UI category (Small/Hatchback/Sedan/SUV x Petrol/Diesel/Hybrid) maps to one representative sub-segment from the source's ~24 car categories, chosen to match common Indian market models.",
+      "limitations": "Real emissions vary further by exact engine size and vehicle age/condition within each bucket; this is a defensible simplification, not full precision."
+    }
+  },
+
+  "electricity": {
+    "grid_average": {
+      "value": 0.710,
+      "unit": "kg_CO2e_per_kWh",
+      "source": "Central Electricity Authority (CEA), Government of India - CO2 Baseline Database for the Indian Power Sector, Version 21.0",
+      "source_url": "https://cea.nic.in/baseline_db/version-21-0/?lang=en",
+      "source_year": 2025,
+      "data_coverage": "FY 2024-25 (provisional)",
+      "geographic_scope": "India (national grid weighted average)",
+      "calculation_method": "Total CO2 emissions from grid-connected stations / net electricity generation into grid (includes thermal, hydro, nuclear, RES, and imports)",
+      "confidence": "high",
+      "assumptions": "Uses national average; does not adjust for state-level grid mix (e.g. West Bengal's coal-heavy mix vs. a hydro-heavy state).",
+      "limitations": "Marked provisional by CEA. Declines annually as renewable share grows (0.727 in FY23-24, 0.716 in FY22-23) -- should be reviewed/updated yearly."
+    }
+  },
+
+  "diet": {
+    "unit": "kg_CO2e_per_day",
+    "source": "Scarborough, P. et al. (2014), 'Dietary greenhouse gas emissions of meat-eaters, fish-eaters, vegetarians and vegans in the UK', Climatic Change",
+    "source_year": 2014,
+    "geographic_scope": "United Kingdom (EPIC-Oxford cohort, ~55,000 participants) -- used as an international proxy; no equivalent India-specific large-cohort study was found",
+    "confidence": "medium -- proxy, disclosed",
+    "assumptions": "User's self-selected diet category is mapped directly to the closest matching UK cohort category.",
+    "limitations": "Indian dietary patterns (dairy-heavy vegetarian diets, different staples, different food-mile patterns) differ materially from the UK cohort this data was drawn from. This MUST be disclosed to the end user as a proxy, not an Indian-specific figure.",
+    "categories": {
+      "high_meat":    { "value": 7.19, "represents": ">=100g meat/day" },
+      "medium_meat":  { "value": 5.63, "represents": "50-99g meat/day" },
+      "low_meat":     { "value": 4.67, "represents": "<50g meat/day" },
+      "pescatarian":  { "value": 3.91, "represents": "Fish, no meat" },
+      "vegetarian":   { "value": 3.81 },
+      "vegan":        { "value": 2.89 }
+    }
+  },
+
+  "waste": {
+    "base_factor": {
+      "value": 1.0,
+      "unit": "kg_CO2e_per_kg_waste",
+      "source": "'The Greenhouse Gas Emission of Mumbai City' (2026), Springer Nature -- India-specific municipal waste management case study",
+      "source_year": 2026,
+      "geographic_scope": "Mumbai, India -- used as a national proxy",
+      "calculation_method": "Total emissions from the city's current waste management mix (landfill + partial treatment) / total MSW tonnage; rounded from measured 0.998 kg CO2e/kg",
+      "confidence": "medium",
+      "assumptions": "Used as a directional national estimate.",
+      "limitations": "City-specific figure; India's MSW collection/treatment rate varies significantly by city and state (national collection rate ~70-75% per CPCB-adjacent sources)."
+    },
+    "recycling_reduction": {
+      "value": 0.50,
+      "type": "assumption",
+      "NOT_a_sourced_emission_factor": true,
+      "rationale": "Reasonable simplification representing that consistent recycling diverts a meaningful share of waste from landfill/high-emission disposal.",
+      "confidence": "low -- explicitly disclosed as an assumption, not derived from a study",
+      "limitations": "No authoritative India-specific household-level recycling-avoided-emissions figure was found. Must be labeled as an assumption in both code comments and any user-facing methodology page."
+    }
+  },
+
+  "shopping": {
+    "qualitative_only": true,
+    "contributes_to_numeric_total": false,
+    "rationale": "No India-specific, methodologically defensible per-item or per-spend emission factor was found. Including a fabricated number here would manufacture false precision. This category is passed to the AI (Granite) as context for generating advice, and shown to the user as a separate qualitative indicator -- never added into the CO2e total.",
+    "reference_points_for_context_only": {
+      "note": "These are NOT used in calculation. Provided only as background for writing sensible AI prompt context.",
+      "source": "GoClimate, 'The carbon footprint of shopping' (2020) -- non-peer-reviewed, illustrative only",
+      "examples": "t-shirt ~2 kg CO2e, jeans ~15-20 kg CO2e (embedded manufacturing footprint, global average)"
+    },
+    "tiers": ["rarely_buys_new_items", "buys_occasionally", "buys_frequently"]
+  },
+
+  "display": {
+    "result_label": "Estimated annual lifestyle CO2e",
+    "disclosure_note": "Indicative estimate based on published emission factors, documented proxies, and stated assumptions. It is not a complete life-cycle assessment."
+  }
+}
